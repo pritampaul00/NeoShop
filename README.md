@@ -1,170 +1,1039 @@
-# NeoShop: Scalable Order Management System 🌟
+# 🛒 NeoShop — Full-Stack E-Commerce Microservices Platform
 
-![NeoShop Architecture](diagrams/architecture-diagram.jpeg) 
+<p align="center">
+  <b>Spring Boot 3 • Spring Cloud • React • TypeScript • Kafka • PostgreSQL • MongoDB • Keycloak • Docker</b>
+</p>
 
-Welcome to **NeoShop**, a modern e-commerce platform designed as a scalable Order Management System using a microservices architecture. Built with **Spring Boot 3** and **Spring Cloud**, NeoShop ensures high performance, scalability, and seamless integration for e-commerce applications.
+NeoShop is a full-stack e-commerce platform built using a **microservices architecture**. It provides product browsing, authentication, shopping cart, wishlist, checkout, Razorpay/COD payments, order tracking, automated order-status progression, email notifications, reviews, and an admin dashboard.
 
-## 🚀 Project Overview
+The backend is built with **Spring Boot 3 and Spring Cloud**, while the frontend uses **React + TypeScript + Vite**.
 
-NeoShop is an e-commerce platform that leverages microservices to manage various aspects of an online shopping system, including customer data, product catalogs, order processing, payments, and notifications. The system is designed to be cloud-native, distributed, and highly scalable, making it a perfect solution for modern e-commerce needs.
+---
 
-### 🎯 Key Features
-- **Microservices Architecture**: Modular and independent services for better scalability and maintainability.
-- **Real-Time Communication**: Asynchronous messaging using Kafka for seamless interaction between services.
-- **Distributed Tracing**: Zipkin integration for observability and monitoring of requests across services.
-- **Centralized Configuration**: Config Server for managing configurations across all microservices.
-- **Secure Access**: Keycloak for identity and access management.
-- **Database Strategy**: MongoDB for flexible document storage and PostgreSQL for relational data.
-- **Containerized Deployment**: Docker for efficient and scalable deployment.
+## 📸 Architecture
 
-## 🔧 Technologies Used
-- **Spring Boot 3** & **Spring Cloud**: For building and managing a distributed system.
-- **Apache Kafka**: For real-time asynchronous communication between microservices.
-- **Zipkin**: For distributed tracing and observability.
-- **Config Server**: For centralized configuration management.
-- **API Gateway**: Single entry point for all client requests.
-- **Keycloak**: For secure authentication and authorization.
-- **MongoDB**: NoSQL database for flexible data storage.
-- **PostgreSQL**: Relational database for structured data.
-- **Docker**: For containerized deployment and scalability.
-- **Eureka Server**: For service discovery and registration.
+![NeoShop Architecture](diagrams/architecture-diagram.jpeg)
 
-## 🛠 Microservices in NeoShop
+---
 
-NeoShop is composed of the following microservices, each responsible for a specific domain:
+# 🚀 Key Features
 
-1. **Customer Service**  
-   - Manages customer data such as first name, last name, and email.
-   - Linked to the Address service for storing customer addresses (street, house number, zip code).
+## 🛍️ Customer Experience
 
-2. **Product Service**  
-   - Handles product and category management.
-   - Manages product details like name, description, available quantity, and price.
-   - Linked to the Category service for product categorization.
+- Browse products without logging in
+- Product categories
+- Product search and filtering
+- Product details
+- Product images
+- Shopping cart
+- Guest cart
+- Automatic guest-cart merge after login
+- Wishlist
+- Customer profile
+- Checkout
+- Order placement
+- Order history
+- Order details
+- Order tracking
+- Product reviews
 
-3. **Order Service**  
-   - Manages order processing and tracking.
-   - Stores order details such as order date and reference.
-   - Linked to the OrderLine service for managing individual items in an order (quantity).
+---
 
-4. **Payment Service**  
-   - Validates payments asynchronously using Kafka.
-   - Stores payment details like reference, amount, and status.
+## 🔐 Authentication & Authorization
 
-5. **Notification Service**  
-   - Sends real-time updates and notifications to users.
-   - Stores notification details such as sender, recipient, content, and date.
+NeoShop uses **Keycloak** for authentication and role-based authorization.
 
-### 📊 Entity-Relationship Diagram (ERD)
+### Guest users can:
+
+- Browse products
+- View product details
+- Search and filter products
+- Add products to cart
+
+### Authentication is required for:
+
+- Wishlist
+- Checkout
+- Placing orders
+- My Orders
+- Profile
+- Reviews
+- Protected customer operations
+
+### Admin users can:
+
+- Manage products
+- Manage product stock
+- Upload product images
+- View orders
+- Inspect individual orders
+- Access the admin dashboard
+
+---
+
+# 📦 Order Management
+
+NeoShop implements an automated order lifecycle.
+
+```text
+PENDING
+   │
+   ▼
+CONFIRMED
+   │
+   ▼
+SHIPPED
+   │
+   ▼
+OUT_FOR_DELIVERY
+   │
+   ▼
+DELIVERED
+```
+
+During local development, the Order Service scheduler advances the order lifecycle automatically.
+
+The current development configuration runs the scheduler every **10 seconds**, while individual lifecycle transitions are designed around **30-second intervals** for testing.
+
+For production, the scheduler can be changed to a longer interval.
+
+---
+
+# 📧 Order Notifications
+
+Kafka is used for asynchronous order events.
+
+Customers receive email notifications for:
+
+- Order confirmation
+- Order shipped
+- Order out for delivery
+- Order delivered
+- Payment confirmation
+
+The Notification Service consumes Kafka events and sends emails through SMTP.
+
+For local development, **MailDev** is used to inspect emails.
+
+---
+
+# 💳 Payment System
+
+NeoShop supports:
+
+### Cash on Delivery
+
+```text
+Checkout
+   ↓
+Order Service
+   ↓
+Payment Service
+   ↓
+COD Payment
+   ↓
+Order Delivered
+   ↓
+COD Payment Completed
+```
+
+### Razorpay
+
+```text
+Checkout
+   ↓
+Order Service
+   ↓
+Payment Service
+   ↓
+Razorpay
+   ↓
+Payment Verification
+   ↓
+Order Confirmation
+```
+
+Supported payment methods:
+
+```text
+RAZORPAY
+COD
+```
+
+---
+
+# 🏗️ System Architecture
+
+NeoShop is composed of independent microservices communicating through REST/Feign and asynchronous Kafka events.
+
+```text
+                         ┌─────────────────────┐
+                         │    React Frontend   │
+                         │ React + TypeScript  │
+                         └──────────┬──────────┘
+                                    │
+                                    ▼
+                         ┌─────────────────────┐
+                         │    API Gateway      │
+                         │      :8222          │
+                         └──────────┬──────────┘
+                                    │
+             ┌──────────────────────┼──────────────────────┐
+             │                      │                      │
+             ▼                      ▼                      ▼
+      Customer Service       Product Service        Order Service
+             │                      │                      │
+             │                      │             ┌────────┼────────┐
+             │                      │             │        │        │
+             │                      │             ▼        ▼        ▼
+             │                      │          Customer  Product  Payment
+             │                      │          Service   Service  Service
+             │                      │
+             └──────────────────────┴───────────────┐
+                                                     │
+                                                     ▼
+                                                   Kafka
+                                                     │
+                                                     ▼
+                                            Notification Service
+                                                     │
+                                                     ▼
+                                                   Email
+```
+
+The detailed architecture is available here:
+
+![Updated Architecture](diagrams/architecture-diagram-updated.png)
+
+---
+
+# 🧩 Microservices
+
+## 1. Customer Service
+
+Responsible for:
+
+- Customer information
+- Customer profile
+- Customer address
+- Customer lookup
+
+---
+
+## 2. Product Service
+
+Responsible for:
+
+- Products
+- Categories
+- Product descriptions
+- Product prices
+- Product stock
+- Product images
+- Product purchasing
+- Stock restoration
+
+---
+
+## 3. Order Service
+
+Responsible for:
+
+- Creating orders
+- Order lines
+- Order references
+- Order totals
+- Payment method
+- Order status
+- Shipping address
+- Order tracking
+- Order cancellation
+- Order-status scheduler
+
+The Order Service communicates with Customer, Product and Payment services through service-to-service communication.
+
+---
+
+## 4. Payment Service
+
+Responsible for:
+
+- Razorpay order creation
+- Razorpay payment verification
+- COD payments
+- Payment status
+- Payment persistence
+- Payment confirmation events
+
+---
+
+## 5. Notification Service
+
+Responsible for:
+
+- Kafka consumers
+- Notification persistence
+- Order confirmation emails
+- Payment confirmation emails
+- Shipment emails
+- Out-for-delivery emails
+- Delivery confirmation emails
+
+---
+
+## 6. Review Service
+
+Responsible for:
+
+- Product reviews
+- Ratings / feedback
+- Order-line validation before review operations
+
+---
+
+# 📨 Kafka Event Architecture
+
+NeoShop uses Apache Kafka for asynchronous communication.
+
+## Order Confirmation
+
+```text
+Order Service
+      │
+      ▼
+ order-topic
+      │
+      ▼
+Notification Service
+      │
+      ▼
+Order Confirmation Email
+```
+
+## Payment Confirmation
+
+```text
+Payment Service
+      │
+      ▼
+payment-topic
+      │
+      ▼
+Notification Service
+      │
+      ▼
+Payment Confirmation Email
+```
+
+## Order Status Updates
+
+```text
+Order Service
+      │
+      ▼
+order-status-topic
+      │
+      ▼
+Notification Service
+      │
+      ├──► Shipped Email
+      │
+      ├──► Out-for-Delivery Email
+      │
+      └──► Delivered Email
+```
+
+---
+
+# 🔄 Order Lifecycle Event Flow
+
+```text
+                 ORDER CREATED
+                       │
+                       ▼
+                    PENDING
+                       │
+             Payment validation
+                       │
+                       ▼
+                  CONFIRMED
+                       │
+                    30 sec
+                       ▼
+                   SHIPPED
+                       │
+                    30 sec
+                       ▼
+              OUT_FOR_DELIVERY
+                       │
+                    30 sec
+                       ▼
+                  DELIVERED
+                       │
+                       ▼
+             COD PAYMENT COMPLETED
+```
+
+For Razorpay orders, the Order Service waits for a completed payment before moving the order from `PENDING` to `CONFIRMED`.
+
+For COD orders, the order can be confirmed immediately.
+
+---
+
+# 🗄️ Database Architecture
+
+NeoShop uses a combination of relational and document databases.
+
+## PostgreSQL
+
+Used for relational business data such as:
+
+- Products
+- Categories
+- Orders
+- Order lines
+- Payments
+- Customer data where configured
+
+## MongoDB
+
+Used for document-oriented notification data.
+
+The services communicate through APIs and events rather than relying on cross-service database joins.
+
+---
+
+# 📊 Entity Relationship Diagram
 
 ![NeoShop ERD](diagrams/ERD.jpeg)
 
-### 📐 Domain-Driven Design (DDD) Diagram
+### Updated ERD
 
-![NeoShop ERD](diagrams/DDD.jpeg)
+![Updated NeoShop ERD](diagrams/ERD-updated.png)
 
-Below is the ERD for NeoShop, illustrating the relationships between entities across different domains:
+The current Order domain contains information such as:
 
-- **Customer Domain**:
-  - `Customer` (id, firstname, lastname, email) ↔ `Address` (id, street, houseNumber, zipCode)
-- **Product Domain**:
-  - `Product` (id, name, description, availableQuantity, price) ↔ `Category` (id, name, description)
-- **Order Domain**:
-  - `Order` (id, orderDate, reference) ↔ `OrderLine` (id, quantity)
-  - `Order` is linked to `Customer`, `Payment`, and `Notification`.
-- **Payment Domain**:
-  - `Payment` (id, reference, amount, status)
-- **Notification Domain**:
-  - `Notification` (id, sender, recipient, content, date)
+- Order ID
+- Order reference
+- Total amount
+- Payment method
+- Order status
+- Customer ID
+- Shipping address
+- Creation timestamp
+- Shipped timestamp
+- Out-for-delivery timestamp
+- Delivered timestamp
 
-### 🖼️ Architecture Diagram
+Order lines maintain the relationship between an order and purchased products.
 
-The architecture diagram showcases how NeoShop's microservices interact with each other:
+---
 
-- **API Gateway**: Acts as the entry point for all client requests, routing them to the appropriate microservice (`/customers`, `/products`, `/orders`).
-- **Service Discovery**: Eureka Server for registering and discovering microservices.
-- **Asynchronous Communication**: Kafka enables real-time messaging (e.g., "Send Payment Confirmation" and "Send Order Confirmation").
-- **Distributed Tracing**: Zipkin tracks requests across microservices for better observability.
-- **Database**: MongoDB for most services, with PostgreSQL used where relational data is needed.
-- **Configuration**: Config Server for centralized configuration management.
+# 📐 Domain-Driven Design
 
-## 🏗️ Project Structure
+NeoShop is organized around independent business domains.
 
-The project is divided into multiple microservices, each with its own domain and responsibilities. The domains are:
+![NeoShop DDD](diagrams/DDD.jpeg)
 
-- **Customer Domain**: Manages customer and address data.
-- **Product Domain**: Manages products and categories.
-- **Order Domain**: Handles orders and order lines.
-- **Payment Domain**: Processes payments.
-- **Notification Domain**: Sends notifications.
+### Updated DDD Diagram
 
-Each microservice is a standalone Spring Boot application, containerized using Docker, and communicates via Kafka for asynchronous events.
+![Updated NeoShop DDD](diagrams/DDD-updated.png)
 
-## 🚀 Getting Started
+### Bounded Contexts
 
-### Prerequisites
-- Java 17 or later
-- Maven
-- Docker
-- MongoDB
+```text
+Customer Context
+        │
+        ├── Customer
+        └── Address
+
+Product Context
+        │
+        ├── Product
+        ├── Category
+        ├── Stock
+        └── Product Images
+
+Order Context
+        │
+        ├── Order
+        ├── OrderLine
+        ├── Order Status
+        └── Shipping Address
+
+Payment Context
+        │
+        ├── Razorpay
+        ├── COD
+        └── Payment Status
+
+Review Context
+        │
+        ├── Reviews
+        └── Ratings
+
+Notification Context
+        │
+        ├── Kafka Consumers
+        ├── Email
+        └── Notifications
+```
+
+---
+
+# 🔐 Security Architecture
+
+Keycloak provides authentication and authorization.
+
+```text
+User
+ │
+ ▼
+Frontend
+ │
+ ▼
+Keycloak
+ │
+ ▼
+JWT Access Token
+ │
+ ▼
+API Gateway
+ │
+ ▼
+Protected Microservices
+```
+
+The Gateway validates authentication and applies role-based access rules.
+
+---
+
+# 🔭 Observability
+
+NeoShop integrates **Zipkin** for distributed tracing.
+
+```text
+Frontend
+   │
+   ▼
+API Gateway
+   │
+   ▼
+Microservices
+   │
+   ▼
+Zipkin
+```
+
+This allows requests to be traced across the distributed system.
+
+---
+
+# 🐳 Containerized Infrastructure
+
+Docker Compose is used for local infrastructure.
+
+The environment includes components such as:
+
 - PostgreSQL
-- Apache Kafka
+- MongoDB
+- Kafka
+- Zookeeper
 - Keycloak
+- MailDev
 - Zipkin
 
-### Setup Instructions
+Start the infrastructure:
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/AmrElsebaey/NeoShop.git
-   cd neoshop
-   ```
+```bash
+docker compose up -d
+```
 
-2. **Set Up Configuration**:
-   - Start the Config Server to manage configurations for all microservices.
-   - Update the configuration files in the Config Server with your environment-specific settings (e.g., database URLs, Kafka broker, etc.).
+Check containers:
 
-3. **Run Dependencies**:
-   - Start MongoDB, PostgreSQL, Kafka, Keycloak, and Zipkin using Docker:
-     ```bash
-     docker-compose up -d
-     ```
+```bash
+docker compose ps
+```
 
-4. **Start Eureka Server**:
-   - Navigate to the `eureka-server` directory and run:
-     ```bash
-     mvn spring-boot:run
-     ```
+Stop containers:
 
-5. **Start Microservices**:
-   - Start each microservice (Customer, Product, Order, Payment, Notification) by navigating to their respective directories and running:
-     ```bash
-     mvn spring-boot:run
-     ```
+```bash
+docker compose down
+```
 
-6. **Access the API Gateway**:
-   - The API Gateway will be available at `http://localhost:8080`.
-   - Example endpoints:
-     - `/customers` for customer-related operations.
-     - `/products` for product-related operations.
-     - `/orders` for order-related operations.
+View logs:
 
-7. **Monitor with Zipkin**:
-   - Access Zipkin at `http://localhost:9411` to view distributed tracing data.
+```bash
+docker compose logs -f
+```
 
-## 📈 Future Improvements
-- Add support for Kubernetes for orchestration and scaling.
-- Implement CI/CD pipelines for automated deployment.
-- Enhance security with advanced Keycloak configurations.
-- Add more advanced analytics and reporting features.
+---
 
-## 🎯 Learning Outcomes
-NeoShop has been a fantastic learning experience, helping me deepen my expertise in:
-- Microservices architecture and best practices.
-- Cloud-native solutions using Spring Cloud.
-- Distributed systems and asynchronous communication with Kafka.
-- Observability and monitoring with Zipkin.
-- Containerization and deployment with Docker.
+# 🖥️ Frontend
 
-## 📬 Contact
-For any questions or feedback, feel free to reach out at [amrelsebay3@gmail.com](mailto:amrelsebay3@gmail.com).
+The frontend is built using:
+
+- React
+- TypeScript
+- Vite
+- React Router
+- Keycloak JS
+- CSS
+- REST APIs
+
+### Frontend structure
+
+```text
+frontend/
+│
+├── public/
+│
+├── src/
+│   ├── auth/
+│   ├── context/
+│   ├── pages/
+│   ├── services/
+│   ├── assets/
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── index.css
+│
+├── package.json
+├── package-lock.json
+└── vite.config.ts
+```
+
+---
+
+# 📁 Project Structure
+
+```text
+NeoShop/
+│
+├── diagrams/
+│   ├── architecture-diagram.jpeg
+│   ├── architecture-diagram-updated.png
+│   ├── ERD.jpeg
+│   ├── ERD-updated.png
+│   ├── DDD.jpeg
+│   ├── DDD-updated.png
+│   └── micro-services.drawio
+│
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   ├── package.json
+│   └── vite.config.ts
+│
+├── services/
+│   ├── config-server/
+│   ├── discovery/
+│   ├── gateway/
+│   ├── customer/
+│   ├── product/
+│   ├── order/
+│   ├── payment/
+│   ├── notification/
+│   └── review/
+│
+├── resources/
+├── docker-compose.yml
+├── start-neoshop.bat
+├── README.md
+└── .gitignore
+```
+
+---
+
+# ⚙️ Technology Stack
+
+## Frontend
+
+- React
+- TypeScript
+- Vite
+- React Router
+- Keycloak JS
+
+## Backend
+
+- Java
+- Spring Boot 3
+- Spring Cloud
+- Spring Data JPA
+- Spring Data MongoDB
+- Spring Cloud Gateway
+- Spring Cloud Config
+- Spring Cloud OpenFeign
+- Eureka
+
+## Messaging
+
+- Apache Kafka
+- Spring Kafka
+
+## Security
+
+- Keycloak
+- OAuth 2.0 / OpenID Connect
+- JWT
+
+## Databases
+
+- PostgreSQL
+- MongoDB
+
+## Payments
+
+- Razorpay
+- Cash on Delivery
+
+## Observability
+
+- Zipkin
+- Distributed tracing
+
+## Infrastructure
+
+- Docker
+- Docker Compose
+- GitHub Actions
+
+---
+
+# 🌐 Local Service Ports
+
+| Component | Port |
+|---|---:|
+| React Frontend | `5173` |
+| API Gateway | `8222` |
+| Config Server | `8888` |
+| Eureka Server | `8761` |
+| Product Service | `8050` |
+| Payment Service | `8060` |
+| Order Service | `8070` |
+| Notification Service | `8040` |
+| Keycloak | `9098` |
+| Zipkin | `9411` |
+| MailDev | `1080` |
+
+---
+
+# 🛠️ Prerequisites
+
+Install:
+
+- Java 17+
+- Maven
+- Node.js
+- npm
+- Docker Desktop
+- Git
+
+---
+
+# 🚀 Running NeoShop Locally
+
+## 1. Clone the repository
+
+```bash
+git clone <YOUR_GITHUB_REPOSITORY_URL>
+cd NeoShop
+```
+
+---
+
+## 2. Configure environment variables
+
+Create a `.env` file in the project root.
+
+Example:
+
+```env
+RAZORPAY_KEY_ID=your_razorpay_test_key
+RAZORPAY_KEY_SECRET=your_razorpay_test_secret
+```
+
+> Never commit `.env` to GitHub.
+
+---
+
+## 3. Start infrastructure
+
+```bash
+docker compose up -d
+```
+
+Verify:
+
+```bash
+docker compose ps
+```
+
+---
+
+## 4. Start Config Server
+
+```bash
+cd services/config-server
+mvn spring-boot:run
+```
+
+---
+
+## 5. Start Eureka Server
+
+```bash
+cd services/discovery
+mvn spring-boot:run
+```
+
+---
+
+## 6. Start Customer Service
+
+```bash
+cd services/customer
+mvn spring-boot:run
+```
+
+---
+
+## 7. Start Product Service
+
+```bash
+cd services/product
+mvn spring-boot:run
+```
+
+---
+
+## 8. Start Payment Service
+
+```bash
+cd services/payment
+mvn spring-boot:run
+```
+
+---
+
+## 9. Start Order Service
+
+```bash
+cd services/order
+mvn spring-boot:run
+```
+
+---
+
+## 10. Start Notification Service
+
+```bash
+cd services/notification
+mvn spring-boot:run
+```
+
+---
+
+## 11. Start Review Service
+
+```bash
+cd services/review
+mvn spring-boot:run
+```
+
+---
+
+## 12. Start API Gateway
+
+```bash
+cd services/gateway
+mvn spring-boot:run
+```
+
+---
+
+# 🖥️ Start Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5173
+```
+
+The API Gateway runs at:
+
+```text
+http://localhost:8222
+```
+
+---
+
+# 📧 Email Testing
+
+MailDev is used for local email testing.
+
+Open:
+
+```text
+http://localhost:1080
+```
+
+You can inspect:
+
+- Order confirmation
+- Payment confirmation
+- Order shipped
+- Out for delivery
+- Order delivered
+
+---
+
+# 🔍 Distributed Tracing
+
+Open Zipkin:
+
+```text
+http://localhost:9411
+```
+
+Zipkin can be used to inspect distributed request traces across NeoShop services.
+
+---
+
+# 🧪 Testing
+
+### Backend
+
+From an individual service:
+
+```bash
+mvn test
+```
+
+### Frontend
+
+```bash
+npm run build
+```
+
+---
+
+# 📦 Product Management
+
+Admins can manage products from the Admin Dashboard.
+
+Product management includes:
+
+- Product creation
+- Product editing
+- Product deletion
+- Stock updates
+- Category assignment
+- Product image upload
+
+Product images are exposed through the Product Service.
+
+---
+
+# 🔄 Service Communication
+
+NeoShop uses two primary communication patterns.
+
+### Synchronous communication
+
+Used for operations that require an immediate response.
+
+```text
+Order Service
+      │
+      ├──► Customer Service
+      │
+      ├──► Product Service
+      │
+      └──► Payment Service
+```
+
+Feign clients and service discovery are used for service-to-service communication.
+
+### Asynchronous communication
+
+Used for notifications and events.
+
+```text
+Order / Payment Services
+          │
+          ▼
+        Kafka
+          │
+          ▼
+Notification Service
+          │
+          ▼
+        Email
+```
+
+---
+
+# 📈 Future Improvements
+
+- Kubernetes deployment
+- Production cloud deployment
+- CI/CD pipeline automation
+- Horizontal service scaling
+- Production Kafka configuration
+- Production Keycloak configuration
+- Cloud object storage for product images
+- Advanced monitoring
+- Centralized logging
+- Recommendation system
+- Analytics dashboard
+- Improved automated testing
+
+---
+
+# 🎯 Learning Outcomes
+
+NeoShop demonstrates practical implementation of:
+
+- Microservices architecture
+- Domain-driven design
+- REST APIs
+- Spring Boot
+- Spring Cloud
+- API Gateway
+- Service discovery
+- Centralized configuration
+- OpenFeign
+- Kafka event-driven architecture
+- Distributed tracing
+- JWT authentication
+- Keycloak
+- PostgreSQL
+- MongoDB
+- Docker
+- Razorpay integration
+- Order lifecycle management
+- React
+- TypeScript
+- CI/CD concepts
+
+---
+
+# 👨‍💻 Author
+
+**Pritam Paul**
+
+Full-Stack Developer
+
+Java • Spring Boot • Node.js • React • TypeScript • Microservices
+
+---
+
+⭐ If you find NeoShop useful, consider giving the repository a star.
