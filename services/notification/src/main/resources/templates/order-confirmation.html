@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Order Confirmed</title>
+</head>
+
+<body style="
+    margin:0;
+    padding:0;
+    background:#f5f5f5;
+    font-family:Arial, Helvetica, sans-serif;
+">
+
+<div style="
+    max-width:700px;
+    margin:30px auto;
+    background:#ffffff;
+    border-radius:8px;
+    overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+">
+
+    <!-- Header -->
+    <div style="
+        background:#2874f0;
+        color:#ffffff;
+        padding:25px 30px;
+    ">
+        <h1 style="
+            margin:0;
+            font-size:28px;
+        ">
+            NeoShop
+        </h1>
+
+        <p style="
+            margin:8px 0 0;
+            font-size:16px;
+        ">
+            Your order has been confirmed 🎉
+        </p>
+    </div>
+
+
+    <!-- Greeting -->
+    <div style="padding:30px;">
+
+        <h2 style="
+            margin-top:0;
+            color:#222222;
+        ">
+            Thank you,
+            <span th:text="${customerName}">Customer</span>!
+        </h2>
+
+        <p style="
+            color:#555555;
+            font-size:15px;
+            line-height:1.6;
+        ">
+            We've received your order and we're getting it ready.
+            We'll keep you updated as your order moves through each
+            delivery stage.
+        </p>
+
+
+        <!-- Order Information -->
+        <div style="
+            background:#f7f7f7;
+            border-radius:6px;
+            padding:18px;
+            margin-top:20px;
+        ">
+
+            <p style="margin:6px 0;">
+                <strong>Order ID:</strong>
+                <span th:text="${orderReference}">NEOSHOP-12345</span>
+            </p>
+
+            <p style="margin:6px 0;">
+                <strong>Payment Method:</strong>
+                <span th:text="${paymentMethod}">COD</span>
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- Order Details -->
+    <div style="padding:0 30px 30px;">
+
+        <h3 style="
+            color:#222222;
+            margin-bottom:15px;
+        ">
+            Order Details
+        </h3>
+
+
+        <table
+                width="100%"
+                cellpadding="10"
+                cellspacing="0"
+                style="
+                    border-collapse:collapse;
+                    font-size:14px;
+                "
+        >
+
+            <thead>
+
+            <tr style="
+                background:#f5f5f5;
+                border-bottom:1px solid #dddddd;
+            ">
+
+                <th align="left">
+                    Product
+                </th>
+
+                <th align="center">
+                    Qty
+                </th>
+
+                <th align="right">
+                    Price
+                </th>
+
+                <th align="right">
+                    Subtotal
+                </th>
+
+            </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            <tr
+                    th:each="product : ${products}"
+                    style="
+                        border-bottom:1px solid #eeeeee;
+                    "
+            >
+
+                <!-- Product -->
+                <td>
+
+                    <strong th:text="${product.name}">
+                        Product
+                    </strong>
+
+                    <br>
+
+                    <span
+                            style="
+                                color:#888888;
+                                font-size:12px;
+                            "
+                            th:text="${product.description}">
+                        Description
+                    </span>
+
+                </td>
+
+
+                <!-- Quantity -->
+                <td align="center">
+
+                    <span
+                            th:text="${#numbers.formatDecimal(product.quantity, 1, 0)}">
+                        1
+                    </span>
+
+                </td>
+
+
+                <!-- Price -->
+                <td align="right">
+
+                    ₹<span
+                        th:text="${#numbers.formatDecimal(product.price, 1, 2)}">
+                        0.00
+                    </span>
+
+                </td>
+
+
+                <!-- Subtotal -->
+                <td align="right">
+
+                    ₹<span
+                        th:text="${#numbers.formatDecimal(
+                            product.price.multiply(
+                                T(java.math.BigDecimal).valueOf(product.quantity)
+                            ),
+                            1,
+                            2
+                        )}">
+                        0.00
+                    </span>
+
+                </td>
+
+            </tr>
+
+            </tbody>
+
+        </table>
+
+
+        <!-- Total -->
+        <div style="
+            text-align:right;
+            margin-top:20px;
+            padding-top:15px;
+            border-top:2px solid #eeeeee;
+        ">
+
+            <span style="
+                font-size:18px;
+                font-weight:bold;
+            ">
+                Total:
+            </span>
+
+            <span
+                    style="
+                        font-size:20px;
+                        font-weight:bold;
+                        margin-left:10px;
+                    "
+                    th:text="'₹' + ${#numbers.formatDecimal(totalAmount, 1, 2)}"
+            >
+                ₹0.00
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- Shipping Address -->
+    <div style="
+        padding:25px 30px;
+        background:#fafafa;
+    ">
+
+        <h3 style="
+            margin-top:0;
+            color:#222222;
+        ">
+            📍 Shipping Address
+        </h3>
+
+        <div style="
+            background:#ffffff;
+            border:1px solid #eeeeee;
+            border-radius:6px;
+            padding:15px;
+            line-height:1.6;
+            color:#555555;
+        ">
+
+            <strong
+                    style="color:#222222;"
+                    th:text="${customerName}">
+                Customer Name
+            </strong>
+
+            <br>
+
+            <span th:text="${shippingAddress.street}">
+                Street
+            </span>
+
+            <br>
+
+            <span th:text="${shippingAddress.city}">
+                City
+            </span>,
+
+            <span th:text="${shippingAddress.state}">
+                State
+            </span>
+
+            -
+
+            <span th:text="${shippingAddress.postalCode}">
+                Postal Code
+            </span>
+
+            <br>
+
+            <span th:text="${shippingAddress.country}">
+                Country
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- Order Progress -->
+    <div style="
+        padding:25px 30px;
+    ">
+
+        <h3 style="
+            margin-top:0;
+        ">
+            What's next?
+        </h3>
+
+        <p style="color:#555555;">
+            We'll keep you updated about your order:
+        </p>
+
+        <p>
+            🟢 <strong>Order Confirmed</strong>
+        </p>
+
+        <p>
+            ⚪ 📦 <strong>Shipped</strong>
+        </p>
+
+        <p>
+            ⚪ 🚚 <strong>Out for Delivery</strong>
+        </p>
+
+        <p>
+            ⚪ ✅ <strong>Delivered</strong>
+        </p>
+
+    </div>
+
+
+    <!-- Footer -->
+    <div style="
+        padding:25px;
+        text-align:center;
+        background:#f5f5f5;
+        color:#777777;
+        font-size:13px;
+    ">
+
+        <p style="margin:5px;">
+            Thank you for shopping with NeoShop ❤️
+        </p>
+
+        <p style="margin:5px;">
+            This is an automated email. Please do not reply.
+        </p>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
