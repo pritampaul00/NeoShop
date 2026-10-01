@@ -403,7 +403,7 @@ The services communicate through APIs and events rather than relying on cross-se
 
 # 📊 Entity Relationship Diagram
 
-![NeoShop ERD](diagrams/ERD.jpeg)
+![NeoShop ERD](diagrams/ERD.png)
 
 
 
@@ -413,7 +413,7 @@ The services communicate through APIs and events rather than relying on cross-se
 
 NeoShop is organized around independent business domains.
 
-![NeoShop DDD](diagrams/DDD.jpeg)
+![NeoShop DDD](diagrams/DDD.png)
 
 
 
