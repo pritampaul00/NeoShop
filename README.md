@@ -201,9 +201,7 @@ NeoShop is composed of independent microservices communicating through REST/Feig
                                                    Email
 ```
 
-The detailed architecture is available here:
 
-![Updated Architecture](diagrams/architecture-diagram-updated.png)
 
 ---
 
@@ -407,25 +405,7 @@ The services communicate through APIs and events rather than relying on cross-se
 
 ![NeoShop ERD](diagrams/ERD.jpeg)
 
-### Updated ERD
 
-![Updated NeoShop ERD](diagrams/ERD-updated.png)
-
-The current Order domain contains information such as:
-
-- Order ID
-- Order reference
-- Total amount
-- Payment method
-- Order status
-- Customer ID
-- Shipping address
-- Creation timestamp
-- Shipped timestamp
-- Out-for-delivery timestamp
-- Delivered timestamp
-
-Order lines maintain the relationship between an order and purchased products.
 
 ---
 
@@ -435,9 +415,7 @@ NeoShop is organized around independent business domains.
 
 ![NeoShop DDD](diagrams/DDD.jpeg)
 
-### Updated DDD Diagram
 
-![Updated NeoShop DDD](diagrams/DDD-updated.png)
 
 ### Bounded Contexts
 
