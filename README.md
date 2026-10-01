@@ -415,7 +415,28 @@ NeoShop is organized around independent business domains.
 
 ![NeoShop DDD](diagrams/DDD.png)
 
+Below is the ERD for NeoShop, illustrating the main entities and their relationships across the application's bounded contexts:
 
+Customer Domain:
+Customer (id, firstName, lastName, email) and Address (street, city, state, postalCode, country) manage customer and address information.
+
+Product Domain:
+Product (id, name, description, availableQuantity, price) is associated with Category and supports product images and Reviews.
+
+Order Domain:
+Order (id, reference, totalAmount, paymentMethod, status, customerId, createdDate, shippedDate, outForDeliveryDate, deliveredDate) contains OrderLines and an embedded shipping Address. Orders reference customers and products through service-level identifiers.
+
+Payment Domain:
+Payment (id, amount, paymentMethod, status, orderId, razorpayOrderId, razorpayPaymentId) manages Razorpay and Cash on Delivery payments.
+
+Notification Domain:
+Notification stores notification/event information and is managed by the Notification Service using MongoDB. Order and payment events are delivered asynchronously through Kafka.
+
+Review Domain:
+Review stores product ratings and customer reviews, with references to the associated product and customer.
+
+Microservices Note:
+Cross-service references such as customerId, productId, and orderId are represented as identifiers rather than database-level foreign keys, following NeoShop's microservices architecture.
 
 ### Bounded Contexts
 
