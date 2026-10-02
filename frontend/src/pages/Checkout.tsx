@@ -653,14 +653,14 @@ function Checkout() {
                   </span>
 
                   <small>
-                    {item.quantity} × $
+                    {item.quantity} × ₹ 
                     {item.price.toFixed(2)}
                   </small>
 
                 </div>
 
                 <strong>
-                  $
+                  ₹ 
                   {(
                     item.price *
                     item.quantity
@@ -680,7 +680,7 @@ function Checkout() {
               </span>
 
               <span>
-                ${cartTotal.toFixed(2)}
+                ₹ {cartTotal.toFixed(2)}
               </span>
 
             </div>

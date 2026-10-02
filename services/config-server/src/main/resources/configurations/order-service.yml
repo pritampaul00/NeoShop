@@ -11,6 +11,12 @@ spring:
     database: POSTGRESQL
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+    baseline-description: "Existing order database"
+
   kafka:
     producer:
       bootstrap-servers: localhost:9092
