@@ -1,858 +1,177 @@
-# 🛒 NeoShop — Full-Stack E-Commerce Microservices Platform
+<div align="center">
 
-<p align="center">
-  <b>Spring Boot 3 • Spring Cloud • React • TypeScript • Kafka • PostgreSQL • MongoDB • Keycloak • Docker</b>
-</p>
+# NeoShop
 
-NeoShop is a full-stack e-commerce platform built using a **microservices architecture**. It provides product browsing, authentication, shopping cart, wishlist, checkout, Razorpay/COD payments, order tracking, automated order-status progression, email notifications, reviews, and an admin dashboard.
+### A microservices-based e-commerce platform
 
-The backend is built with **Spring Boot 3 and Spring Cloud**, while the frontend uses **React + TypeScript + Vite**.
+[![Java](https://img.shields.io/badge/Java-17-orange?logo=openjdk)](https://www.oracle.com/java/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.3-6DB33F?logo=springboot)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docs.docker.com/compose/)
 
----
+Browse products, manage a cart, place and track orders, and process payments through a distributed Spring Boot backend.
 
-## 📸 Architecture
-
-![NeoShop Architecture](diagrams/architecture-diagram.jpeg)
-
----
-
-# 🚀 Key Features
-
-## 🛍️ Customer Experience
-
-- Browse products without logging in
-- Product categories
-- Product search and filtering
-- Product details
-- Product images
-- Shopping cart
-- Guest cart
-- Automatic guest-cart merge after login
-- Wishlist
-- Customer profile
-- Checkout
-- Order placement
-- Order history
-- Order details
-- Order tracking
-- Product reviews
+</div>
 
 ---
 
-## 🔐 Authentication & Authorization
+## Overview
 
-NeoShop uses **Keycloak** for authentication and role-based authorization.
+NeoShop is a full-stack e-commerce application organized as independently deployable business services. A React and TypeScript frontend communicates with the backend through a Spring Cloud API Gateway. Services use REST/Feign for synchronous requests and Apache Kafka for asynchronous order and payment events.
 
-### Guest users can:
+The project demonstrates domain-oriented service boundaries, centralized configuration, service discovery, authentication, payment integration, and distributed tracing.
 
-- Browse products
-- View product details
-- Search and filter products
-- Add products to cart
+## Features
 
-### Authentication is required for:
+- **Shopping:** product catalog, categories, search and filtering, product details, guest cart, cart merge after sign-in, and wishlist.
+- **Customer accounts:** Keycloak authentication, customer profile, order history, order details, and reviews.
+- **Checkout and payments:** order placement with Razorpay or Cash on Delivery (COD).
+- **Order lifecycle:** pending, confirmed, shipped, out for delivery, and delivered states. The local scheduler advances order status for development.
+- **Notifications:** Kafka-driven order and payment emails, inspectable locally with MailDev.
+- **Administration:** product and stock management, image upload, order listing, and order details.
+- **Operations:** Eureka discovery, centralized configuration, and Zipkin distributed tracing.
 
-- Wishlist
-- Checkout
-- Placing orders
-- My Orders
-- Profile
-- Reviews
-- Protected customer operations
+## Architecture
 
-### Admin users can:
-
-- Manage products
-- Manage product stock
-- Upload product images
-- View orders
-- Inspect individual orders
-- Access the admin dashboard
-
----
-
-# 📦 Order Management
-
-NeoShop implements an automated order lifecycle.
+![NeoShop architecture](diagrams/architecture-diagram.jpeg)
 
 ```text
-PENDING
-   │
-   ▼
-CONFIRMED
-   │
-   ▼
-SHIPPED
-   │
-   ▼
-OUT_FOR_DELIVERY
-   │
-   ▼
-DELIVERED
+React + TypeScript
+        |
+        v
+   API Gateway <------> Keycloak (OIDC / JWT)
+        |
+        +---- Customer Service
+        +---- Product Service
+        +---- Order Service ------> Payment Service
+        |          |                      |
+        |          +------ Kafka <--------+
+        |                    |
+        |                    v
+        |             Notification Service ---> SMTP
+        |
+        +---- Review Service
+
+Shared platform: Config Server, Eureka, PostgreSQL, MongoDB, Zipkin
 ```
 
-During local development, the Order Service scheduler advances the order lifecycle automatically.
-
-The current development configuration runs the scheduler every **10 seconds**, while individual lifecycle transitions are designed around **30-second intervals** for testing.
-
-For production, the scheduler can be changed to a longer interval.
-
----
-
-# 📧 Order Notifications
-
-Kafka is used for asynchronous order events.
-
-Customers receive email notifications for:
-
-- Order confirmation
-- Order shipped
-- Order out for delivery
-- Order delivered
-- Payment confirmation
-
-The Notification Service consumes Kafka events and sends emails through SMTP.
-
-For local development, **MailDev** is used to inspect emails.
-
----
-
-# 💳 Payment System
-
-NeoShop supports:
-
-### Cash on Delivery
-
-```text
-Checkout
-   ↓
-Order Service
-   ↓
-Payment Service
-   ↓
-COD Payment
-   ↓
-Order Delivered
-   ↓
-COD Payment Completed
-```
-
-### Razorpay
-
-```text
-Checkout
-   ↓
-Order Service
-   ↓
-Payment Service
-   ↓
-Razorpay
-   ↓
-Payment Verification
-   ↓
-Order Confirmation
-```
-
-Supported payment methods:
-
-```text
-RAZORPAY
-COD
-```
-
----
-
-# 🏗️ System Architecture
-
-NeoShop is composed of independent microservices communicating through REST/Feign and asynchronous Kafka events.
-
-```text
-                         ┌─────────────────────┐
-                         │    React Frontend   │
-                         │ React + TypeScript  │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │    API Gateway      │
-                         │      :8222          │
-                         └──────────┬──────────┘
-                                    │
-             ┌──────────────────────┼──────────────────────┐
-             │                      │                      │
-             ▼                      ▼                      ▼
-      Customer Service       Product Service        Order Service
-             │                      │                      │
-             │                      │             ┌────────┼────────┐
-             │                      │             │        │        │
-             │                      │             ▼        ▼        ▼
-             │                      │          Customer  Product  Payment
-             │                      │          Service   Service  Service
-             │                      │
-             └──────────────────────┴───────────────┐
-                                                     │
-                                                     ▼
-                                                   Kafka
-                                                     │
-                                                     ▼
-                                            Notification Service
-                                                     │
-                                                     ▼
-                                                   Email
-```
-
-
-
----
-
-# 🧩 Microservices
-
-## 1. Customer Service
-
-Responsible for:
-
-- Customer information
-- Customer profile
-- Customer address
-- Customer lookup
-
----
-
-## 2. Product Service
-
-Responsible for:
-
-- Products
-- Categories
-- Product descriptions
-- Product prices
-- Product stock
-- Product images
-- Product purchasing
-- Stock restoration
-
----
-
-## 3. Order Service
-
-Responsible for:
-
-- Creating orders
-- Order lines
-- Order references
-- Order totals
-- Payment method
-- Order status
-- Shipping address
-- Order tracking
-- Order cancellation
-- Order-status scheduler
-
-The Order Service communicates with Customer, Product and Payment services through service-to-service communication.
-
----
-
-## 4. Payment Service
-
-Responsible for:
-
-- Razorpay order creation
-- Razorpay payment verification
-- COD payments
-- Payment status
-- Payment persistence
-- Payment confirmation events
-
----
-
-## 5. Notification Service
-
-Responsible for:
-
-- Kafka consumers
-- Notification persistence
-- Order confirmation emails
-- Payment confirmation emails
-- Shipment emails
-- Out-for-delivery emails
-- Delivery confirmation emails
-
----
-
-## 6. Review Service
-
-Responsible for:
-
-- Product reviews
-- Ratings / feedback
-- Order-line validation before review operations
-
----
-
-# 📨 Kafka Event Architecture
-
-NeoShop uses Apache Kafka for asynchronous communication.
-
-## Order Confirmation
-
-```text
-Order Service
-      │
-      ▼
- order-topic
-      │
-      ▼
-Notification Service
-      │
-      ▼
-Order Confirmation Email
-```
-
-## Payment Confirmation
-
-```text
-Payment Service
-      │
-      ▼
-payment-topic
-      │
-      ▼
-Notification Service
-      │
-      ▼
-Payment Confirmation Email
-```
-
-## Order Status Updates
-
-```text
-Order Service
-      │
-      ▼
-order-status-topic
-      │
-      ▼
-Notification Service
-      │
-      ├──► Shipped Email
-      │
-      ├──► Out-for-Delivery Email
-      │
-      └──► Delivered Email
-```
-
----
-
-# 🔄 Order Lifecycle Event Flow
-
-```text
-                 ORDER CREATED
-                       │
-                       ▼
-                    PENDING
-                       │
-             Payment validation
-                       │
-                       ▼
-                  CONFIRMED
-                       │
-                    30 sec
-                       ▼
-                   SHIPPED
-                       │
-                    30 sec
-                       ▼
-              OUT_FOR_DELIVERY
-                       │
-                    30 sec
-                       ▼
-                  DELIVERED
-                       │
-                       ▼
-             COD PAYMENT COMPLETED
-```
-
-For Razorpay orders, the Order Service waits for a completed payment before moving the order from `PENDING` to `CONFIRMED`.
-
-For COD orders, the order can be confirmed immediately.
-
----
-
-# 🗄️ Database Architecture
-
-NeoShop uses a combination of relational and document databases.
-
-## PostgreSQL
-
-Used for relational business data such as:
-
-- Products
-- Categories
-- Orders
-- Order lines
-- Payments
-- Customer data where configured
-
-## MongoDB
-
-Used for document-oriented notification data.
-
-The services communicate through APIs and events rather than relying on cross-service database joins.
-
----
-
-# 📊 Entity Relationship Diagram
-
-![NeoShop ERD](diagrams/ERD.png)
-
-
-
----
-
-# 📐 Domain-Driven Design
-
-NeoShop is organized around independent business domains.
-
-![NeoShop DDD](diagrams/DDD.png)
-
-Below is the ERD for NeoShop, illustrating the main entities and their relationships across the application's bounded contexts:
-
-Customer Domain:
-Customer (id, firstName, lastName, email) and Address (street, city, state, postalCode, country) manage customer and address information.
-
-Product Domain:
-Product (id, name, description, availableQuantity, price) is associated with Category and supports product images and Reviews.
-
-Order Domain:
-Order (id, reference, totalAmount, paymentMethod, status, customerId, createdDate, shippedDate, outForDeliveryDate, deliveredDate) contains OrderLines and an embedded shipping Address. Orders reference customers and products through service-level identifiers.
-
-Payment Domain:
-Payment (id, amount, paymentMethod, status, orderId, razorpayOrderId, razorpayPaymentId) manages Razorpay and Cash on Delivery payments.
-
-Notification Domain:
-Notification stores notification/event information and is managed by the Notification Service using MongoDB. Order and payment events are delivered asynchronously through Kafka.
-
-Review Domain:
-Review stores product ratings and customer reviews, with references to the associated product and customer.
-
-Microservices Note:
-Cross-service references such as customerId, productId, and orderId are represented as identifiers rather than database-level foreign keys, following NeoShop's microservices architecture.
-
-### Bounded Contexts
-
-```text
-Customer Context
-        │
-        ├── Customer
-        └── Address
-
-Product Context
-        │
-        ├── Product
-        ├── Category
-        ├── Stock
-        └── Product Images
-
-Order Context
-        │
-        ├── Order
-        ├── OrderLine
-        ├── Order Status
-        └── Shipping Address
-
-Payment Context
-        │
-        ├── Razorpay
-        ├── COD
-        └── Payment Status
-
-Review Context
-        │
-        ├── Reviews
-        └── Ratings
-
-Notification Context
-        │
-        ├── Kafka Consumers
-        ├── Email
-        └── Notifications
-```
-
----
-
-# 🔐 Security Architecture
-
-Keycloak provides authentication and authorization.
-
-```text
-User
- │
- ▼
-Frontend
- │
- ▼
-Keycloak
- │
- ▼
-JWT Access Token
- │
- ▼
-API Gateway
- │
- ▼
-Protected Microservices
-```
-
-The Gateway validates authentication and applies role-based access rules.
-
----
-
-# 🔭 Observability
-
-NeoShop integrates **Zipkin** for distributed tracing.
-
-```text
-Frontend
-   │
-   ▼
-API Gateway
-   │
-   ▼
-Microservices
-   │
-   ▼
-Zipkin
-```
-
-This allows requests to be traced across the distributed system.
-
----
-
-# 🐳 Containerized Infrastructure
-
-Docker Compose is used for local infrastructure.
-
-The environment includes components such as:
-
-- PostgreSQL
-- MongoDB
-- Kafka
-- Zookeeper
-- Keycloak
-- MailDev
-- Zipkin
-
-Start the infrastructure:
-
-```bash
-docker compose up -d
-```
-
-Check containers:
-
-```bash
-docker compose ps
-```
-
-Stop containers:
-
-```bash
-docker compose down
-```
-
-View logs:
-
-```bash
-docker compose logs -f
-```
-
----
-
-# 🖥️ Frontend
-
-The frontend is built using:
-
-- React
-- TypeScript
-- Vite
-- React Router
-- Keycloak JS
-- CSS
-- REST APIs
-
-### Frontend structure
-
-```text
-frontend/
-│
-├── public/
-│
-├── src/
-│   ├── auth/
-│   ├── context/
-│   ├── pages/
-│   ├── services/
-│   ├── assets/
-│   ├── App.tsx
-│   ├── main.tsx
-│   └── index.css
-│
-├── package.json
-├── package-lock.json
-└── vite.config.ts
-```
-
----
-
-# 📁 Project Structure
-
-```text
-NeoShop/
-│
-├── diagrams/
-│   ├── architecture-diagram.jpeg
-│   ├── architecture-diagram-updated.png
-│   ├── ERD.jpeg
-│   ├── ERD-updated.png
-│   ├── DDD.jpeg
-│   ├── DDD-updated.png
-│   └── micro-services.drawio
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   ├── package.json
-│   └── vite.config.ts
-│
-├── services/
-│   ├── config-server/
-│   ├── discovery/
-│   ├── gateway/
-│   ├── customer/
-│   ├── product/
-│   ├── order/
-│   ├── payment/
-│   ├── notification/
-│   └── review/
-│
-├── resources/
-├── docker-compose.yml
-├── start-neoshop.bat
-├── README.md
-└── .gitignore
-```
-
----
-
-# ⚙️ Technology Stack
-
-## Frontend
-
-- React
-- TypeScript
-- Vite
-- React Router
-- Keycloak JS
-
-## Backend
-
-- Java
-- Spring Boot 3
-- Spring Cloud
-- Spring Data JPA
-- Spring Data MongoDB
-- Spring Cloud Gateway
-- Spring Cloud Config
-- Spring Cloud OpenFeign
-- Eureka
-
-## Messaging
-
-- Apache Kafka
-- Spring Kafka
-
-## Security
-
-- Keycloak
-- OAuth 2.0 / OpenID Connect
-- JWT
-
-## Databases
-
-- PostgreSQL
-- MongoDB
-
-## Payments
-
-- Razorpay
-- Cash on Delivery
-
-## Observability
-
-- Zipkin
-- Distributed tracing
-
-## Infrastructure
-
-- Docker
-- Docker Compose
-- GitHub Actions
-
----
-
-# 🌐 Local Service Ports
-
-| Component | Port |
-|---|---:|
-| React Frontend | `5173` |
-| API Gateway | `8222` |
-| Config Server | `8888` |
-| Eureka Server | `8761` |
-| Product Service | `8050` |
-| Payment Service | `8060` |
-| Order Service | `8070` |
-| Notification Service | `8040` |
-| Keycloak | `9098` |
-| Zipkin | `9411` |
-| MailDev | `1080` |
-
----
-
-# 🛠️ Prerequisites
-
-Install:
-
-- Java 17+
-- Maven
-- Node.js
-- npm
-- Docker Desktop
+- **Synchronous:** Gateway routing and service-to-service calls use HTTP and OpenFeign.
+- **Asynchronous:** order, payment, and order-status events flow through Kafka to the Notification Service.
+- **Persistence:** PostgreSQL stores relational business data. MongoDB stores notification documents.
+- **Identity:** Keycloak issues tokens. The gateway validates JWTs and applies access rules.
+
+### Services
+
+| Service | Responsibility |
+|---|---|
+| `config-server` | Central configuration |
+| `discovery` | Eureka service registry |
+| `gateway` | API routing and JWT validation |
+| `customer` | Customer and address data |
+| `product` | Catalog, categories, stock, and product images |
+| `order` | Orders, order lines, tracking, and lifecycle scheduler |
+| `payment` | Razorpay and COD payment processing |
+| `notification` | Kafka consumers and email notifications |
+| `review` | Product ratings and reviews |
+
+### Architecture references
+
+- [Architecture diagram](diagrams/architecture-diagram.jpeg)
+- [Entity relationship diagram](diagrams/ERD.png)
+- [Domain-driven design diagram](diagrams/DDD.png)
+- [Microservices drawing source](diagrams/micro-services.drawio)
+
+## Tech stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, React Router, Axios |
+| Backend | Java 17, Spring Boot 3.4.3, Spring Cloud 2024.0.0 |
+| Service communication | Spring Cloud Gateway, OpenFeign, Eureka |
+| Messaging | Apache Kafka, Spring Kafka |
+| Data | PostgreSQL, MongoDB, Spring Data JPA |
+| Security | Keycloak, OAuth 2.0 / OpenID Connect, JWT |
+| Payments | Razorpay, Cash on Delivery |
+| Observability | Micrometer Tracing, Zipkin |
+| Local infrastructure | Docker Compose, Zookeeper, MailDev |
+
+## Requirements
+
+Install the following before starting:
+
+- Java 17
+- Node.js and npm
+- Docker Engine or Docker Desktop with Docker Compose
 - Git
 
----
+The backend modules include Maven Wrapper scripts. Use `./mvnw` on macOS/Linux or `mvnw.cmd` on Windows. A system Maven installation is optional.
 
-# 🚀 Running NeoShop Locally
+## Quickstart
 
-## 1. Clone the repository
+### 1. Get the source
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone <repository-url>
 cd NeoShop
 ```
 
----
+Replace `<repository-url>` with the URL of your Git repository.
 
-## 2. Configure environment variables
-
-Create a `.env` file in the project root.
-
-Example:
-
-```env
-RAZORPAY_KEY_ID=your_razorpay_test_key
-RAZORPAY_KEY_SECRET=your_razorpay_test_secret
-```
-
-> Never commit `.env` to GitHub.
-
----
-
-## 3. Start infrastructure
+### 2. Start local infrastructure
 
 ```bash
 docker compose up -d
-```
-
-Verify:
-
-```bash
 docker compose ps
 ```
 
----
+Compose starts PostgreSQL, MongoDB, Zookeeper, Kafka, Keycloak, MailDev, and Zipkin.
 
-## 4. Start Config Server
+> The Compose file currently uses development credentials and Keycloak's `start-dev` mode. Do not expose this configuration to the internet or reuse these credentials in production.
+
+### 3. Configure external credentials
+
+Razorpay checkout requires valid Razorpay credentials. Set `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` in the environment used by the relevant backend service, or configure them through the service's external configuration. Use test-mode credentials for local development. Never commit secrets.
+
+Keycloak realm and client setup must match the issuer and client settings used by the frontend and gateway. The gateway configuration currently expects the issuer `http://localhost:9098/realms/micro-services`.
+
+### 4. Start backend services
+
+Open a separate terminal for each service. Start them in this order so dependent services can find configuration and register with Eureka:
 
 ```bash
 cd services/config-server
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
-
----
-
-## 5. Start Eureka Server
 
 ```bash
 cd services/discovery
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
----
-
-## 6. Start Customer Service
+Then start the business services:
 
 ```bash
-cd services/customer
-mvn spring-boot:run
+cd services/customer && ./mvnw spring-boot:run
+cd services/product && ./mvnw spring-boot:run
+cd services/payment && ./mvnw spring-boot:run
+cd services/order && ./mvnw spring-boot:run
+cd services/notification && ./mvnw spring-boot:run
+cd services/review && ./mvnw spring-boot:run
 ```
 
----
-
-## 7. Start Product Service
-
-```bash
-cd services/product
-mvn spring-boot:run
-```
-
----
-
-## 8. Start Payment Service
-
-```bash
-cd services/payment
-mvn spring-boot:run
-```
-
----
-
-## 9. Start Order Service
-
-```bash
-cd services/order
-mvn spring-boot:run
-```
-
----
-
-## 10. Start Notification Service
-
-```bash
-cd services/notification
-mvn spring-boot:run
-```
-
----
-
-## 11. Start Review Service
-
-```bash
-cd services/review
-mvn spring-boot:run
-```
-
----
-
-## 12. Start API Gateway
+Start the gateway after the services:
 
 ```bash
 cd services/gateway
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
----
+Run each command from its own terminal, from the repository root. On Windows, use `mvnw.cmd` instead of `./mvnw`.
 
-# 🖥️ Start Frontend
+### 5. Start the frontend
+
+In another terminal:
 
 ```bash
 cd frontend
@@ -860,179 +179,120 @@ npm install
 npm run dev
 ```
 
-Open:
+Open **http://localhost:5173**.
 
-```text
-http://localhost:5173
-```
+The API Gateway is configured for **http://localhost:8222**.
 
-The API Gateway runs at:
+## Local endpoints
 
-```text
-http://localhost:8222
-```
+| Component | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| API Gateway | http://localhost:8222 |
+| Config Server | http://localhost:8888 |
+| Eureka | http://localhost:8761 |
+| Keycloak | http://localhost:9098 |
+| MailDev inbox | http://localhost:1080 |
+| Zipkin | http://localhost:9411 |
+| PostgreSQL | localhost:5432 |
+| MongoDB | localhost:27017 |
+| Kafka host listener | localhost:9092 |
 
----
+Business-service ports configured in the repository include Customer `8090`, Product `8050`, Payment `8060`, Order `8070`, Notification `8040`, and Review `8061`.
 
-# 📧 Email Testing
+## Usage
 
-MailDev is used for local email testing.
+1. Open the frontend and browse the product catalog.
+2. Sign in through Keycloak to use protected customer features.
+3. Add products to the cart, review the cart, and proceed to checkout.
+4. Select Razorpay or COD and place the order.
+5. Review order history and order details from the customer area.
+6. Sign in with an admin account to manage products, stock, and orders.
 
-Open:
+For local email testing, open MailDev at http://localhost:1080. For request traces, open Zipkin at http://localhost:9411.
 
-```text
-http://localhost:1080
-```
+The local order scheduler advances orders through `PENDING`, `CONFIRMED`, `SHIPPED`, `OUT_FOR_DELIVERY`, and `DELIVERED`. Its short development intervals are for testing, not production operations.
 
-You can inspect:
-
-- Order confirmation
-- Payment confirmation
-- Order shipped
-- Out for delivery
-- Order delivered
-
----
-
-# 🔍 Distributed Tracing
-
-Open Zipkin:
-
-```text
-http://localhost:9411
-```
-
-Zipkin can be used to inspect distributed request traces across NeoShop services.
-
----
-
-# 🧪 Testing
+## Build and test
 
 ### Backend
 
-From an individual service:
+Run tests from each service directory:
 
 ```bash
-mvn test
+cd services/order
+./mvnw test
 ```
+
+Build a service JAR:
+
+```bash
+./mvnw clean package
+```
+
+Repeat in the other service directories. Each service is a separate Maven project.
 
 ### Frontend
 
 ```bash
+cd frontend
+npm ci
 npm run build
+npm run preview
 ```
 
----
+The build runs TypeScript project checks and creates the Vite production bundle in `frontend/dist`.
 
-# 📦 Product Management
+The frontend currently defines `dev`, `build`, and `preview` scripts. It does not currently define a test or lint script.
 
-Admins can manage products from the Admin Dashboard.
+## Deployment
 
-Product management includes:
+The repository provides Dockerfiles for `config-server`, `customer`, and `discovery`, plus Docker Compose for local infrastructure. It does not currently provide container definitions for every backend service or the frontend.
 
-- Product creation
-- Product editing
-- Product deletion
-- Stock updates
-- Category assignment
-- Product image upload
+For a production deployment, create and verify container images for all services and the frontend, then supply production-specific configuration for databases, Kafka, Keycloak, SMTP, Razorpay, service discovery, and tracing. Use managed secrets, secure database credentials, TLS, persistent storage, health checks, and production Keycloak mode. Kubernetes and automated CI/CD are roadmap items, not included deployment workflows.
 
-Product images are exposed through the Product Service.
+## Contributing
 
----
+Contributions are welcome.
 
-# 🔄 Service Communication
+1. Open an issue to describe a bug or proposed change.
+2. Fork the repository and create a focused branch.
+3. Keep changes scoped and follow the existing Java and TypeScript conventions.
+4. Add or update tests and documentation with behavior changes.
+5. Run the relevant Maven tests and frontend production build.
+6. Submit a pull request with a clear summary, test evidence, and any configuration changes.
 
-NeoShop uses two primary communication patterns.
+Be respectful and constructive in discussions and reviews. Do not commit credentials, personal data, generated build output, or local environment files.
 
-### Synchronous communication
+## Known gaps and roadmap
 
-Used for operations that require an immediate response.
+### Current gaps
 
-```text
-Order Service
-      │
-      ├──► Customer Service
-      │
-      ├──► Product Service
-      │
-      └──► Payment Service
-```
+- Most existing backend tests are Spring context-load smoke tests. They do not yet verify core business workflows.
+- The frontend has no configured automated test suite or lint command.
+- No GitHub Actions workflow is present in the repository.
+- Only three backend services currently have Dockerfiles.
+- Local Compose credentials, development Keycloak mode, and local service URLs need production overrides.
+- The gateway and payment service configuration files currently specify different Keycloak realm names (`micro-services` and `micro-service`). Verify and align the realm before testing authenticated payment flows.
+- Keycloak realm/client bootstrap and the complete local secret/configuration contract need a dedicated setup guide.
+- A repository-wide one-command launcher and end-to-end verification guide are not currently provided.
 
-Feign clients and service discovery are used for service-to-service communication.
+### Roadmap
 
-### Asynchronous communication
+- Add unit, integration, API, and end-to-end tests for checkout, inventory, payments, order transitions, and notifications.
+- Add frontend component and browser tests.
+- Add CI for Maven tests, frontend checks, and build artifacts.
+- Containerize every service and the frontend.
+- Add production deployment examples, including Kubernetes.
+- Improve centralized logging, metrics, alerting, and production Kafka configuration.
+- Add cloud object storage for product images, recommendations, and analytics.
 
-Used for notifications and events.
+## License
 
-```text
-Order / Payment Services
-          │
-          ▼
-        Kafka
-          │
-          ▼
-Notification Service
-          │
-          ▼
-        Email
-```
+No license file was present in the inspected repository. Add a `LICENSE` file before describing the project as open source or defining reuse terms.
 
----
-
-# 📈 Future Improvements
-
-- Kubernetes deployment
-- Production cloud deployment
-- CI/CD pipeline automation
-- Horizontal service scaling
-- Production Kafka configuration
-- Production Keycloak configuration
-- Cloud object storage for product images
-- Advanced monitoring
-- Centralized logging
-- Recommendation system
-- Analytics dashboard
-- Improved automated testing
-
----
-
-# 🎯 Learning Outcomes
-
-NeoShop demonstrates practical implementation of:
-
-- Microservices architecture
-- Domain-driven design
-- REST APIs
-- Spring Boot
-- Spring Cloud
-- API Gateway
-- Service discovery
-- Centralized configuration
-- OpenFeign
-- Kafka event-driven architecture
-- Distributed tracing
-- JWT authentication
-- Keycloak
-- PostgreSQL
-- MongoDB
-- Docker
-- Razorpay integration
-- Order lifecycle management
-- React
-- TypeScript
-- CI/CD concepts
-
----
-
-# 👨‍💻 Author
+## Author
 
 **Pritam Paul**
 
-Full-Stack Developer
-
-Java • Spring Boot • Node.js • React • TypeScript • Microservices
-
----
-
-⭐ If you find NeoShop useful, consider giving the repository a star.
+Full-stack developer | Java · Spring Boot · React · TypeScript · Microservices
